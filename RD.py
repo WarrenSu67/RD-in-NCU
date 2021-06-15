@@ -4,6 +4,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
+from article_outline import ArticleOutline
+from firebase_service import FirebaseService
 
 
 def crawl():
@@ -21,7 +23,7 @@ def crawl():
     howpage_list = list(howpage.text.strip().split())
     for i in range(len(howpage_list)):
         for j in range(1,11):
-            printArticleOutline(driver, j)
+            fetchArticleOutline(driver, j)
         if i != len(howpage_list):
             # next page
             next_page = driver.find_element_by_link_text('下一頁')
@@ -29,29 +31,39 @@ def crawl():
     driver.quit()
 
 
-def printArticleOutline(driver, index):
+def fetchArticleOutline(driver, index):
+    global firebaseService
+
     try:
         # information of block
-        total = WebDriverWait(driver, 1).until(EC.presence_of_element_located(
+        article = WebDriverWait(driver, 1).until(EC.presence_of_element_located(
             (By.XPATH, f'/html/body/div[1]/div[2]/div[2]/div[1]/div/div[2]/div[2]/div/table/tbody/tr[{index}]')))
     except:
         return
 
     try:
         # individual information
-        category = WebDriverWait(total, 1).until(
+        category = WebDriverWait(article, 1).until(
             EC.presence_of_element_located((By.XPATH, './td[1]/a')))
-        print(category.text)
+        # print(category.text)
 
-        news = WebDriverWait(total, 1).until(
+        news = WebDriverWait(article, 1).until(
             EC.presence_of_element_located((By.XPATH, './td[3]/span/a')))
-        print(news.text)
+        # print(news.text)
 
-        link = WebDriverWait(total, 1).until(
+        link = WebDriverWait(article, 1).until(
             EC.presence_of_element_located((By.XPATH, './td[3]/span/a')))
-        print(link.get_attribute("href"))
+        # print(link.get_attribute("href"))
 
+        articleOutline = ArticleOutline(category.text, news.text, link.get_attribute("href"))
+
+        # articleOutline.printJson()
+
+        firebaseService.addArticleOutline(articleOutline)
     except:
         return
 
-crawl()
+if __name__ == "__main__":
+    firebaseService = FirebaseService()
+
+    crawl()
